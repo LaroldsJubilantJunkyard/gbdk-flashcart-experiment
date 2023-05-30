@@ -1,0 +1,11 @@
+{
+  "name": "test_flashable_cart",
+  "version": "1.0.0",
+  "description": "An minimal template project with a Makefile that only compiles files in the same directory",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

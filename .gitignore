@@ -1,0 +1,6 @@
+*.sav
+*.o
+*.lst
+*.asm
+*.sym
+/node_modules
