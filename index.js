@@ -1,40 +1,101 @@
-const {exec, execSync} = require("child_process")
-const {readFileSync,writeFileSync} = require("fs")
+const { exec, execSync } = require("child_process");
+const { readFileSync, writeFileSync, readdir, existsSync} = require("fs");
 
-while(true){
 
-    const bytes = readFileSync("Example.sav")
+const EMULATOR_PATH = process.env.EMULATOR_PATH || "C:\\Emulicious\\Emulicious.exe"
 
-    const checkSumHex = bytes[2].toString(16)+""+bytes[1].toString(16)
-    const checkSum = parseInt(checkSumHex,16)
-    const file = parseInt(bytes[0].toString(16),16)
+if(!existsSync("Example.gb")){
+    execSync("make")
+}
 
-    if(checkSum==12345){
+function runProgram(romFileNames){
 
-        
+while (true) {
+  var bytes = null;
+  
+  if(!existsSync("Example.sav")){
 
-    console.log("Check sum: "+checkSum);
-    console.log("Check sum: "+file);
+    bytes = Buffer.alloc(32768)
+    bytes.fill(255)
+    
+  }else{
+    bytes= readFileSync("Example.sav");
+  }
 
-    bytes[1]=0;
-    bytes[2]=0;
+  const checkSumHex = bytes[2].toString(16) + "" + bytes[1].toString(16);
+  const checkSum = parseInt(checkSumHex, 16);
+  const file = parseInt(bytes[0].toString(16), 16);
 
-    writeFileSync("Example.sav",bytes)
+
+
+  if (checkSum == 12345) {
+    console.log(bytes)
+    console.log("Check sum: " + checkSum);
+    console.log("Check sum: " + file);
+
+    bytes[1] = 0;
+    bytes[2] = 0;
+
+    writeFileSync("Example.sav", bytes);
 
     try {
-        if(file==0)execSync("C:\\Emulicious\\Emulicious.exe 1942.gb")
-        else execSync("C:\\Emulicious\\Emulicious.exe tetris.gb")
-    }catch(e){
-        console.log(e)
+        console.log("running: "+romFileNames[file])
+        execSync(EMULATOR_PATH+" roms\\"+romFileNames[file]);
+    } catch (e) {
+      console.log(e);
     }
+  } else {
 
-    }else{
+    
+    console.log("Got "+romFileNames.length+" roms");
+    
+    bytes[3] = romFileNames.length;
 
-        try {
-            execSync("C:\\Emulicious\\Emulicious.exe Example.gb");
-        }catch(e){
-            console.log(e)
+    for(var i=0;i<romFileNames.length;i++){
+
+        var filename = romFileNames[i].toLowerCase()
+
+        const len = Math.min(filename.length,20)
+
+        bytes[4+i*21] = len
+
+        for(var j=0;j<len;j++){
+
+            const charCode = filename.charCodeAt(j)
+
+            const index = 4+i*21+j+1
+
+            if(charCode>='0'.charCodeAt(0)&&charCode<='9'.charCodeAt(0))bytes[index] = 48 + (charCode-'0'.charCodeAt(0))
+            else if(charCode>='a'.charCodeAt(0)&&charCode<='z'.charCodeAt(0))bytes[index] = 97 + (charCode-'a'.charCodeAt(0))
+            else bytes[index]  =0;
+
+
         }
+        
     }
 
+    console.log(bytes)
+    writeFileSync("Example.sav", bytes);
+
+
+    try {
+      execSync(EMULATOR_PATH+" Example.gb");
+    } catch (e) {
+      console.log(e);
+      return;
+    }
+  }
 }
+
+  }
+
+  
+const romFileNames = []
+
+    readdir("roms", (err, files) => {
+    files.forEach(file => {
+        console.log(file)
+        romFileNames.push(file);
+    });
+    runProgram(romFileNames);
+  });
